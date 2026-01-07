@@ -1,0 +1,5 @@
+Flask
+zstandard
+Pillow
+texture2ddecoder
+sc-compression
