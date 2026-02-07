@@ -1,3 +1,4 @@
+import io
 import os
 import struct
 import json
@@ -41,12 +42,18 @@ class Engine:
 
         if zstd_pos != -1:
             if progress_callback: progress_callback("Decompressing ZSTD...", 10)
-            sig = "SCTX_ZSTD"
             header_data = raw_data[:zstd_pos]
             dctx = zstd.ZstdDecompressor()
             try:
-                decompressed_data = dctx.decompress(raw_data[zstd_pos:], max_output_size=200_000_000)
-            except: pass
+                decompressed_data = dctx.decompress(raw_data[zstd_pos:])
+                sig = "SCTX_ZSTD"
+            except zstd.ZstdError:
+                try:
+                    with dctx.stream_reader(io.BytesIO(raw_data[zstd_pos:])) as reader:
+                        decompressed_data = reader.read()
+                    sig = "SCTX_ZSTD"
+                except Exception:
+                    header_data = b""
         else:
             try:
                 if progress_callback: progress_callback("Decompressing LZMA...", 10)
@@ -71,7 +78,7 @@ class Engine:
         if len(header_data) > 0:
             with open(os.path.join(work_dir, "header.bin"), "wb") as f: f.write(header_data)
 
-        if not offsets and sig == "SCTX_ZSTD":
+        if not offsets and sig in {"SCTX_ZSTD", "RAW"}:
             if progress_callback: progress_callback("Scanning RAW textures...", 20)
             configs = [
                 (1024, 1024, 8, 8, "ASTC_8x8_RAW"), (1024, 1024, 4, 4, "ASTC_4x4_RAW"),
