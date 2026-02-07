@@ -81,7 +81,7 @@ class Engine:
         if len(header_data) > 0:
             with open(os.path.join(work_dir, "header.bin"), "wb") as f: f.write(header_data)
 
-        if not offsets and sig in {"SCTX_ZSTD", "RAW"}:
+        if not offsets:
             if progress_callback: progress_callback("Scanning RAW textures...", 20)
             configs = [
                 (1024, 1024, 8, 8, "ASTC_8x8_RAW"), (1024, 1024, 4, 4, "ASTC_4x4_RAW"),
