@@ -40,6 +40,7 @@ class Engine:
         zstd_pos = raw_data.find(zstd_sig)
         header_data = b""
 
+        zstd_ok = False
         if zstd_pos != -1:
             if progress_callback: progress_callback("Decompressing ZSTD...", 10)
             header_data = raw_data[:zstd_pos]
@@ -47,14 +48,16 @@ class Engine:
             try:
                 decompressed_data = dctx.decompress(raw_data[zstd_pos:])
                 sig = "SCTX_ZSTD"
+                zstd_ok = True
             except zstd.ZstdError:
                 try:
                     with dctx.stream_reader(io.BytesIO(raw_data[zstd_pos:])) as reader:
                         decompressed_data = reader.read()
                     sig = "SCTX_ZSTD"
+                    zstd_ok = True
                 except Exception:
                     header_data = b""
-        else:
+        if not zstd_ok:
             try:
                 if progress_callback: progress_callback("Decompressing LZMA...", 10)
                 decompressed_data = Decompressor().decompress(raw_data)
